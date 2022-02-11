@@ -103,6 +103,7 @@ cm[0x9647] = 0x9649
 
 #Jog Search B01F - B029
 
+rtmidi = mido.Backend("mido.backends.rtmidi")
 
 ddj2virt = cmd_mapping
 virt2ddj = {}
@@ -111,17 +112,17 @@ for k,v in cmd_mapping.items():
 
 def find_port(name, out=True):
     if out:
-        names = mido.get_output_names()
+        names = rtmidi.get_output_names()
     else:
-        names = mido.get_input_names()
+        names = rtmidi.get_input_names()
     
     for n in names:
         if n.startswith(name):
             print("Found %s (out=%s)"%(n,out))
             if out:
-                return mido.open_output(n)
+                return rtmidi.open_output(n)
             else:
-                return mido.open_input(n)
+                return rtmidi.open_input(n)
             
     print("Couldn't find %s (out=%s)" % (name,out))
     sys.exit()
@@ -170,28 +171,35 @@ def map_cmd(msg, cmd_mapping):
         dp((">>>",msg.hex(),msg))
     return msg    
 
-def virtout_send(msg):
-    global virt
-    b = bytes(msg.bin())
-    dp(b)
-    res = te.sendData(virt, b, len(b))
-    if not res:
-        print("Error sending message!")
-        sys.exit(0)
 SHIFT1=False
 SHIFT2=False
+ls=0
+lst=0
+
 def handle_ddj(msg):
     global SHIFTED,SHIFT1,SHIFT2
     global ddj2virt
-    dp(("DDJ",msg.hex(),msg))
+    global virt
+    global ls,lst
     b = msg.bytes()
     if (b[0] == 0xB0 or b[0] == 0xB1) and b[1] in (0x21,0x22,0x23,0x29):
+        if time.time() - lst < 0.005:
+            nls = ls + b[2]-64
+            if nls>-63 and nls < 63:
+                ls=nls
+                return
         if b[2] < 64: b[2] -= 5
         elif b[2] > 64: b[2] += 5
+        b[2] += ls
+        if b[2] < 0: b[2] = 0
+        if b[2] > 127: b[2] = 127
+        ls = 0
+        lst = time.time()
         msg = mido.Message.from_bytes(b)
+    dp(("DDJ",msg.hex(),msg))
     if SHIFTED:    
         msg = map_cmd(msg, ddj2virt)
-    virtout_send(msg)
+    virt.send(msg)
     if b[0:2]==[0x90, 0x3f]:
         SHIFT1=b[2]==0x7f
         if SHIFT2 and SHIFT1:
@@ -210,27 +218,22 @@ def handle_virt(msg):
         msg = map_cmd(msg, virt2ddj)
     djout.send(msg)
 
-djin.callback = handle_ddj
+#djin.callback = handle_ddj
 
-virt = te.createPort2("PIONEER DDJ-SX", None, None, 1024, 1 + 2 + 4 + 8)
-buf = create_string_buffer(1024)
+virtualPorts = mido.Backend('mido.backends.tevirtualmidi')
 
-#virtin.callback = handle_virt
-for i in range(0,20):
-    sz = c_int(1024)
-    res = te.getData(virt, buf, byref(sz))
-    msg=mido.Message.from_bytes(buf.raw[0:sz.value])
-    print(msg)
+virt = virtualPorts.open_ioport("PIONEER DDJ-SX", virtual=True)
+
+#for i in range(0,20):
+#    print(virt.receive())
 
 djout.send(mido.Message.from_bytes([0xF0, 0x00, 0x40, 0x05, 0x00, 0x00, 0x02, 0x06, 0x00, 0x03, 0x01, 0xf7]))
 
+def loop():
+    while True:
+        handle_virt(virt.receive())
+from threading import Thread
+t = Thread(target=loop, daemon=True)
+t.start()
 while True:
-    sz = c_int(1024)
-    res = te.getData(virt, buf, byref(sz))
-    if not res:
-        print("Error getting midi message! Need size: "+str(sz))
-        break
-
-    msg = mido.Message.from_bytes(buf.raw[0:sz.value])
-    handle_virt(msg)
-    time.sleep(0.001)
+    handle_ddj(djin.receive())
