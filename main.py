@@ -10,7 +10,12 @@ mapping = glob("c:/Program Files*/Pioneer/rekordbox*/MidiMappings/DDJ-400.midi.c
 print("Midi mapping: %s"%mapping)
 SHIFTED=False
 
-def make_map(row, col, extrain=0,extraout=0):
+# Translate a midi command from deck 1/2 into a midi command for deck 3/4, by adding a fixed value to it
+# cmd = midi command to translate
+# row = row from the mapping csv
+# col = column from the mapping csv
+# extrain/out = extra amount to add to the midi in/out command
+def make_map(cmd, row, col, extrain=0,extraout=0):
     d1 = int(row[col])
     if d1 in [0,1]:
         d3 = d1+2
@@ -58,6 +63,7 @@ with open(mapping) as csvfile:
             print("Unable to handle command with diff in/out msgs")
             print(row)
             continue
+        # default to using the input command if available, otherwise use the output command
         cmd = row['input'] if row['input'] != '' else row['output']
         row['deck1'] = row['deck1out'] if row['deck1in'] == '' else row['deck1in']
         row['deck2'] = row['deck2out'] if row['deck2in'] == '' else row['deck2in']
@@ -69,29 +75,31 @@ with open(mapping) as csvfile:
                 print(row)
             cmds[cmd_map] = row
             if row['deck1'] is not None and row['deck1'] != '':
-                if row['type'] == 'KnobSliderHiRes':
+                if row['type'] == 'KnobSliderHiRes':  # special case for hi res sliders
                     print(row)
-                    valin, valout = make_map(row, 'deck1',0,0)
+                    valin, valout = make_map(cmd, row, 'deck1',0,0)
                     cmd_mapping[valin] = valout
                     print(hex(valin),hex(valout))
-                    valin, valout = make_map(row, 'deck1',2,2)
+                    valin, valout = make_map(cmd, row, 'deck1',2,2)
                     cmd_mapping[valin] = valout
                     print(hex(valin),hex(valout))
                 else:    
-                    valin, valout = make_map(row, 'deck1')
+                    valin, valout = make_map(cmd, row, 'deck1')
                     cmd_mapping[valin] = valout
             if row['deck2'] is not None and row['deck2'] != '':
                 if row['type'] == 'KnobSliderHiRes':
-                    valin, valout = make_map(row, 'deck2',0,4)
+                    valin, valout = make_map(cmd, row, 'deck2',0,4)
                     cmd_mapping[valin] = valout
-                    valin, valout = make_map(row, 'deck2',2,6)
+                    valin, valout = make_map(cmd, row, 'deck2',2,6)
                     cmd_mapping[valin] = valout
                 else:    
-                    valin, valout = make_map(row, 'deck2')
+                    valin, valout = make_map(cmd, row, 'deck2')
                     cmd_mapping[valin] = valout
 
+# don't map these special ones (i already forget what they were)
 del cmd_mapping[0x903F]
 del cmd_mapping[0x913F]
+
 # Manually map load and loop indicators                    
 cm = cmd_mapping
 cm[0xb617] = 0xb619
@@ -110,6 +118,7 @@ virt2ddj = {}
 for k,v in cmd_mapping.items():
     virt2ddj[v] = k
 
+# find a midi device by name
 def find_port(name, out=True):
     if out:
         names = rtmidi.get_output_names()
@@ -133,6 +142,8 @@ djout = find_port("DDJ-400", True)
 #virtin = find_port("Virtual", False)    
 #virtout = find_port("Virtual", True)    
 
+# Overall program logic:
+#
 # ddj > virtual
 #  if has deck
 #    if deck is shifted
@@ -176,6 +187,7 @@ SHIFT2=False
 ls=0
 lst=0
 
+# hasndle messages coming from ddj-400 controller
 def handle_ddj(msg):
     global SHIFTED,SHIFT1,SHIFT2
     global ddj2virt
@@ -211,6 +223,7 @@ def handle_ddj(msg):
             SHIFTED = not SHIFTED
             print(">>SHIFT %s"%SHIFTED)
     
+# handle messages from virtual midi port (ie, rekordbox)    
 def handle_virt(msg):
     global SHIFTED,SHIFT1,SHIFT2
     dp(("Virt",msg.hex(),msg))
