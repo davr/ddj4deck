@@ -55,9 +55,15 @@ def handle_xone(msg):
         msg.channel = 0 if msg.control == 0 else 1
         msg.control = 0 if msg.value == 127 else 1
         msg = mido.Message(type="note_on", channel=msg.channel, note=msg.control, velocity=127)
+        if shift:
+            msg.channel += 4
+        
         virt.send(msg)
         print(">>",msg," = ",msg.hex())
         msg.velocity = 0
+        virt.send(msg)
+        print(">>",msg," = ",msg.hex())
+        return
     elif msg.type == "note_off":
         m = msg.dict()
         m['type'] = "note_on"
