@@ -9,7 +9,7 @@ from ctypes import *
 
 MAX_MSG_SIZE = 1024
 
-vm = ctypes.CDLL("c:/windows/system32/teVirtualMIDI.dll")
+vm = ctypes.WinDLL("c:/windows/system32/teVirtualMIDI.dll")
 
 PARSE_RX = (1)
 PARSE_TX = (2)

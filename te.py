@@ -2,7 +2,7 @@ import ctypes
 from ctypes import *
 import time
 
-vm = ctypes.CDLL("c:/windows/system32/teVirtualMIDI.dll")
+vm = ctypes.WinDLL("c:/windows/system32/teVirtualMIDI.dll")
 getver = vm.virtualMIDIGetVersion
 getver.restype=c_wchar_p
 
