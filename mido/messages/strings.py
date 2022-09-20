@@ -1,5 +1,6 @@
 from .specs import SPEC_BY_TYPE, make_msgdict
 
+ws = {'channel':'ch', 'control':'cn', 'note':'n', 'velocity':'v', 'pitch':'pt', 'program':'pg', 'value':'v'}
 
 def msg2str(msg, include_time=True):
     type_ = msg['type']
@@ -12,10 +13,10 @@ def msg2str(msg, include_time=True):
 
         if name == 'data':
             value = '({})'.format(','.join(str(byte) for byte in value))
-        words.append('{}={}'.format(name, value))
+        words.append('{}={}'.format(ws[name], value))
 
     if include_time:
-        words.append('time={}'.format(msg['time']))
+        words.append('t={}'.format(msg['time']))
 
     return str.join(' ', words)
 
