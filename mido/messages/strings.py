@@ -1,6 +1,6 @@
 from .specs import SPEC_BY_TYPE, make_msgdict
 
-ws = {'channel':'ch', 'control':'cn', 'note':'n', 'velocity':'v', 'pitch':'pt', 'program':'pg', 'value':'v'}
+ws = {'channel':'ch', 'control':'cn', 'note':'n', 'velocity':'v', 'pitch':'pt', 'program':'pg', 'value':'v', 'data':'d'}
 
 def msg2str(msg, include_time=True):
     type_ = msg['type']
