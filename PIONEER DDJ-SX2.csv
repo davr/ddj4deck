@@ -1,4 +1,4 @@
-@file,1,PIONEER DDJ-SX
+@file,1,PIONEER DDJ-SX2
 Area,,Button,9E34,,,,,9E34,,,,,,
 AutoLoop,,Button,,9E0D,9E0E,,,,9E0D,9E0E,,,,
 BeatJump,,Button,,9E0F,9D0F,,,,9E0F,9D0F,,,Fast;,
@@ -59,46 +59,46 @@ NoFunction,,DdjSxPad,,8E43,8E48,,,,8E43,8E48,,,Fast;,
 NoFunction,,DdjSxPad,,8E46,8E49,,,,8E46,8E41,,,Fast;,
 NoFunction,,DdjSxPad,,8E47,9E3E,,,,8E47,9E4A,,,Fast;,
 NoFunction,,DdjSxPad,,8E4B,9E42,,,,8E4B,9E4B,,,Fast;,
-NoFunction,,DdjSxPad,,9E3C,9E43,,,,9E3C,,,,Fast;,
-NoFunction,,DdjSxPad,,9E3D,9E46,,,,9E3D,,,,Fast;,
-NoFunction,,DdjSxPad,,9E40,9E47,,,,9E40,,,,Fast;,
-NoFunction,,DdjSxPad,,9E41,9E4A,,,,9E41,,,,Fast;,
-NoFunction,,DdjSxPad,,9E44,9E4B,,,,9E44,,,,Fast;,
-NoFunction,,DdjSxPad,,9E45,,,,,9E45,,,,Fast;,
-NoFunction,,DdjSxPad,,9E48,,,,,9E48,9E3E,,,Fast;,
+NoFunction,,DdjSxPad,,9E3C,9E43,,,,9E3C,9E3E,,,Fast;,
+NoFunction,,DdjSxPad,,9E3D,9E46,,,,9E3D,9E46,,,Fast;,
+NoFunction,,DdjSxPad,,9E40,9E47,,,,9E40,9E42,,,Fast;,
+NoFunction,,DdjSxPad,,9E41,9E4A,,,,9E41,9E47,,,Fast;,
+NoFunction,,DdjSxPad,,9E44,9E4B,,,,9E44,9E43,,,Fast;,
+NoFunction,,DdjSxPad,,9E45,,,,,9E45,9E3F,,,Fast;,
+NoFunction,,DdjSxPad,,9E48,,,,,9E48,,,,Fast;,
 NoFunction,,DdjSxPad,,9E49,,,,,9E49,,,,Fast;,
-NoFunction,,DdjSxPad,,BD10,,,,,BD10,9E46,,,Fast;,
-NoFunction,,DdjSxPad,,BD11,,,,,BD11,9E42,,,Fast;,
-NoFunction,,DdjSxPad,,8E4A,9E3F,,,,8E3C,9E47,,,Fast;,
+NoFunction,,DdjSxPad,,BD10,,,,,BD10,,,,Fast;,
+NoFunction,,DdjSxPad,,BD11,,,,,BD11,,,,Fast;,
+NoFunction,,DdjSxPad,,8E4A,9E3F,,,,8E3C,,,,Fast;,
 NoFunction,,Button,,,,,,BE0F,,,,,,
-NoFunction,,DdjSxPad,,,,,,,BE12,9E43,,,Fast;,
-NoFunction,,DdjSxPad,,,,,,,BE11,9E3F,,,Fast;,
-PAD11_BeatJump,,DdjSxPad,,9C18,9C1A,,,,9C18,9C1A,,,Fast;,
-PAD12_BeatJump,,DdjSxPad,,9C19,9C1B,,,,9C19,9C1B,,,Fast;,
+NoFunction,,DdjSxPad,,,,,,,BE12,,,,Fast;,
+NoFunction,,DdjSxPad,,,,,,,BE11,,,,Fast;,
+PAD11_BeatJump,,DdjSxPad,,9C1C,9C1E,,,,9C1C,9C1E,,,Fast;,
+PAD12_BeatJump,,DdjSxPad,,9C1D,9C1F,,,,9C1D,9C1F,,,Fast;,
+PAD13_BeatJump,,DdjSxPad,,9C18,9C1A,,,,9C18,9C1A,,,Fast;,
+PAD14_BeatJump,,DdjSxPad,,9C19,9C1B,,,,9C19,9C1B,,,Fast;,
 PAD1_BeatJump,,DdjSxPad,,9400,9500,,,,9400,9500,,,Fast;,
-PAD1_BeatJump,,DdjSxPad,,9C24,9C26,,,,9C24,9C26,,,Fast;,
-PAD1_HotCue,,DdjSxPad,,9E24,9E26,,,,9E24,9E26,,,Fast;,
-PAD1_HotCue+Shift,,DdjSxPad,,9D24,9D26,,,,9D24,9D26,,,Fast;,
+PAD1_HotCue,PAD1.HotCue.Call,DdjSx2Pad,,9E24,9E26,,,,9E24,9E26,,,Fast;,HOT CUE1
+PAD1_HotCue+Shift,PAD1.HotCue.Delete,DdjSx2Pad,,9D24,9D26,,,,9D24,9D26,,,Fast;,Delete HOT CUE1
 PAD2_BeatJump,,DdjSxPad,,9401,9501,,,,9401,9501,,,Fast;,
-PAD2_BeatJump,,DdjSxPad,,9C25,9C27,,,,9C25,9C27,,,Fast;,
-PAD2_HotCue,,DdjSxPad,,9E20,9E22,,,,9E20,9E22,,,Fast;,
-PAD2_HotCue+Shift,,DdjSxPad,,9D20,9D22,,,,9D20,9D22,,,Fast;,
-PAD3_HotCue,,DdjSxPad,,9E1C,9E1E,,,,9E1C,9E1E,,,Fast;,
-PAD3_HotCue+Shift,,DdjSxPad,,9D1C,9D1E,,,,9D1C,9D1E,,,Fast;,
-PAD4_HotCue,,DdjSxPad,,9E18,9E1A,,,,9E18,9E1A,,,Fast;,
-PAD4_HotCue+Shift,,DdjSxPad,,9D18,9D1A,,,,9D18,9D1A,,,Fast;,
-PAD5_BeatJump,,DdjSxPad,,9C20,9C22,,,,9C20,9C22,,,Fast;,
-PAD5_HotCue,,DdjSxPad,,9E25,9E27,,,,9E25,9E27,,,Fast;,
-PAD5_HotCue+Shift,,DdjSxPad,,9D25,9D27,,,,9D25,9D27,,,Fast;,
-PAD6_BeatJump,,DdjSxPad,,9C21,9C23,,,,9C21,9C23,,,Fast;,
-PAD6_HotCue,,DdjSxPad,,9E21,9E23,,,,9E21,9E23,,,Fast;,
-PAD6_HotCue+Shift,,DdjSxPad,,9D21,9D23,,,,9D21,9D23,,,Fast;,
-PAD7_BeatJump,,DdjSxPad,,9C1C,9C1E,,,,9C1C,9C1E,,,Fast;,
-PAD7_HotCue,,DdjSxPad,,9E1D,9E1F,,,,9E1D,9E1F,,,Fast;,
-PAD7_HotCue+Shift,,DdjSxPad,,9D1D,9D1F,,,,9D1D,9D1F,,,Fast;,
-PAD8_BeatJump,,DdjSxPad,,9C1D,9C1F,,,,9C1D,9C1F,,,Fast;,
-PAD8_HotCue,,DdjSxPad,,9E19,9E1B,,,,9E19,9E1B,,,Fast;,
-PAD8_HotCue+Shift,,DdjSxPad,,9D19,9D1B,,,,9D19,9D1B,,,Fast;,
+PAD2_HotCue,PAD2.HotCue.Call,DdjSx2Pad,,9E20,9E22,,,,9E20,9E22,,,Fast;,HOT CUE2
+PAD2_HotCue+Shift,PAD2.HotCue.Delete,DdjSx2Pad,,9D20,9D22,,,,9D20,9D22,,,Fast;,Delete HOT CUE2
+PAD3_HotCue,PAD3.HotCue.Call,DdjSx2Pad,,9E1C,9E1E,,,,9E1C,9E1E,,,Fast;,HOT CUE3
+PAD3_HotCue+Shift,PAD3.HotCue.Delete,DdjSx2Pad,,9D1C,9D1E,,,,9D1C,9D1E,,,Fast;,Delete HOT CUE3
+PAD4_HotCue,PAD4.HotCue.Call,DdjSx2Pad,,9E18,9E1A,,,,9E18,9E1A,,,Fast;,HOT CUE4
+PAD4_HotCue+Shift,PAD4.HotCue.Delete,DdjSx2Pad,,9D18,9D1A,,,,9D18,9D1A,,,Fast;,Delete HOT CUE4
+PAD5_BeatJump,,DdjSxPad,,9C24,9C26,,,,9C24,9C26,,,Fast;,
+PAD5_HotCue,PAD5.HotCue.Call,DdjSx2Pad,,9E25,9E27,,,,9E25,9E27,,,Fast;,HOT CUE5
+PAD5_HotCue+Shift,PAD5.HotCue.Delete,DdjSx2Pad,,9D25,9D27,,,,9D25,9D27,,,Fast;,Delete HOT CUE5
+PAD6_BeatJump,,DdjSxPad,,9C25,9C27,,,,9C25,9C27,,,Fast;,
+PAD6_HotCue,PAD6.HotCue.Call,DdjSx2Pad,,9E21,9E23,,,,9E21,9E23,,,Fast;,HOT CUE6
+PAD6_HotCue+Shift,PAD6.HotCue.Delete,DdjSx2Pad,,9D21,9D23,,,,9D21,9D23,,,Fast;,Delete HOT CUE6
+PAD7_BeatJump,,DdjSxPad,,9C20,9C22,,,,9C20,9C22,,,Fast;,
+PAD7_HotCue,PAD7.HotCue.Call,DdjSx2Pad,,9E1D,9E1F,,,,9E1D,9E1F,,,Fast;,HOT CUE7
+PAD7_HotCue+Shift,PAD7.HotCue.Delete,DdjSx2Pad,,9D1D,9D1F,,,,9D1D,9D1F,,,Fast;,Delete HOT CUE7
+PAD8_BeatJump,,DdjSxPad,,9C21,9C23,,,,9C21,9C23,,,Fast;,
+PAD8_HotCue,PAD8.HotCue.Call,DdjSx2Pad,,9E19,9E1B,,,,9E19,9E1B,,,Fast;,HOT CUE8
+PAD8_HotCue+Shift,PAD8.HotCue.Delete,DdjSx2Pad,,9D19,9D1B,,,,9D19,9D1B,,,Fast;,Delete HOT CUE8
 PitchBendDown,,Button,,9000,9100,,,,9000,9100,,,,
 PitchBendUp,,Button,,9001,9101,,,,9001,9101,,,,
 PlayPause,,Button,,9E29,9E2A,,,,9E29,9E2A,,,Fast;Blink=1000;Priority=50;,
