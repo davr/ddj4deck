@@ -69,7 +69,7 @@ def tester():
     while True:
         time.sleep(1)
         if na!=na0 or nb!=nb0:
-            print(na,nb)
+            print(na,nb,na-na0,nb-nb0)
             na0=na
             nb0=nb
     closePort(porta)

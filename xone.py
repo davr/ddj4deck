@@ -1,10 +1,10 @@
 #!/usr/bin/python3
 import traceback
-import keyboard
 import mido
 import time
 import sys
 from math import ceil
+import msvcrt
 
 virtualPorts = mido.Backend('mido.backends.tevirtualmidi')
 #rbox = virtualPorts.open_ioport("PIONEER DDJ-SX", virtual=True)
@@ -398,22 +398,22 @@ while True:
             xone.send(ping)
     except:
         recon()
-    if keyboard.is_pressed("x"):
-        recon()
-        last_xone = time.time()
-    if keyboard.is_pressed("q"):
-        print("Quitting")
-        break
-    if keyboard.is_pressed("d"):
-        while keyboard.is_pressed("d"):
-            time.sleep(0.1)
-        DBG = not DBG
-    if keyboard.is_pressed("v"):
-        while keyboard.is_pressed("v"):
-            time.sleep(0.1)
-        VU_ON = (VU_ON+1)%3
-        print(">>> VU: %d" % VU_ON)
-        update_layer_color()
+    if msvcrt.kbhit():
+        key = msvcrt.getch()
+        if key == "x":
+            print(">>> Recon")
+            recon()
+            last_xone = time.time()
+        if key == "q":
+            print(">>> Quitting")
+            break
+        if key == "d":
+            DBG = not DBG
+            print(">>> Debug=",DBG)
+        if key == "v":
+            VU_ON = (VU_ON+1)%3
+            print(">>> VU: %d" % VU_ON)
+            update_layer_color()
     try:
         time.sleep(0.1)
     except:
