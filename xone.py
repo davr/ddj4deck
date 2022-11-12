@@ -5,6 +5,7 @@ import time
 import sys
 from math import ceil
 import msvcrt
+from copy import deepcopy
 
 virtualPorts = mido.Backend('mido.backends.tevirtualmidi')
 #rbox = virtualPorts.open_ioport("PIONEER DDJ-SX", virtual=True)
@@ -13,11 +14,21 @@ virtualPorts = mido.Backend('mido.backends.tevirtualmidi')
 rtmidi = mido.Backend("mido.backends.rtmidi")
 last_xone = time.time()
 layer=0
+fxchan=0
 
 # 0 = never, 1 = when not in hotcue, 2 = always
 VU_ON=1
 
-DBG=False
+DBG=True
+
+# layer numbers
+HOTCUE=0
+BEATJUMP=1
+BEATLOOP=2  # not used
+
+VU_NEVER=0
+VU_BEATJUMP=1
+VU_ALWAYS=2
 
 def prn(*args):
     if DBG:
@@ -25,16 +36,16 @@ def prn(*args):
 
 # find a midi device by name
 def find_port(name, out=True):
-    print("Enumerating names")
+    prn("Enumerating names")
     if out:
         names = rtmidi.get_output_names()
     else:
         names = rtmidi.get_input_names()
-    print(names)
+    prn(names)
     
     for n in names:
         if name in n:
-            print("Found %s (out=%s)"%(n,out))
+            prn("Found %s (out=%s)"%(n,out))
             if out:
                 return rtmidi.open_output(n)
             else:
@@ -47,6 +58,8 @@ xone = find_port("XONE", True)
 rbox_in = find_port("Internal", False)
 rbox = find_port("Internal", True)
 
+DBG=False
+
 
 # [shift][layer] = channel
 layer2chan = {False: {0: 14, 1:12}, True: {0: 13, 1:11}}
@@ -55,6 +68,7 @@ chan2layer = {11:(True, 1), 12:(False, 1), 13:(True, 0), 14:(False, 0)}
 
 #red + yell + green
 # + 24 + 24
+# Buttons to always be a certain color
 yellows = [45,46]
 greens = [41,42]
 class Deck:
@@ -91,7 +105,7 @@ class Deck:
     #25 29 33 37
     def vu(self, val):
         self._vu = val
-        if VU_ON == 0 or (VU_ON == 1 and layer == 0): return
+        if VU_ON == VU_NEVER or (VU_ON == VU_BEATJUMP and layer == BEATJUMP): return
         p = vu_mapping_1[val]+1
         m = vu_mapping_2[p]
         #prn(val," > ",p," > ",m)
@@ -172,6 +186,8 @@ vu_mapping_2 = [
 ]
 decks = [Deck(0),Deck(1)]
 def handle_rbox(msg):
+    if msg.type == "sysex":
+        return
     prn("RB",msg," = ",msg.hex())
     if msg.type == "control_change":
         if msg.channel == 0:
@@ -190,13 +206,21 @@ def handle_rbox(msg):
             if msg.control == 5:
                 decks[1].onair(msg.value)
     if msg.type == "note_on":
+        # Ignore FX assign button, as we handle the color of that internally
+        if msg.note == 47:
+            return
+        
+        # Keep track of deck playing
         if msg.note == 41:
             decks[0].play(msg.velocity == 127)
         if  msg.note == 42:
             decks[1].play(msg.velocity == 127)
 
+        # ignore layer change
         if msg.note == 15:
             return
+
+        # keep track of load/warning status
         if msg.channel == 11:
             if msg.note == 0:
                 decks[0].loaded(msg.velocity)
@@ -207,25 +231,32 @@ def handle_rbox(msg):
             if msg.note == 5:
                 decks[1].warn(msg.velocity)
 
+        # Buttons that should always be a certain color
         if msg.note in yellows:
             msg.note += 36
         if msg.note in greens:
             msg.note += 72
+
+        # handle the bottom button grid
         if ((msg.note >= 24 and msg.note <= 39)) and msg.channel in ledcache.keys():
+            # cache their color, so we can display it later if we're on a diff layer
             ledcache[msg.channel][msg.note] = msg.velocity
 
             if msg.channel in chan2layer:
                 s2, l2 = chan2layer[msg.channel]
                 if l2 == layer:
                     msg.channel = 14
-                    if l2 == 0:
+                    if l2 == HOTCUE:
+                        # Convert from many hotcue colors to the 3 xone colors (diff note per color)
                         if msg.velocity in pad_mapping:
                             msg.note += 36 * pad_mapping[msg.velocity]
                             msg.velocity = 127
-                        else:
-                            print("not found: %d"%msg.velocity)
+                        else: 
+                            # default color is yellow
+                            print("color not found: %d"%msg.velocity)
                             msg.note += 36
-                    else:
+                    elif l2 == BEATJUMP:
+                        # beatjump always green btns
                         msg.note += 72
                 else:
                     return
@@ -245,26 +276,27 @@ for c in 11,12,13,14:
         ledcache[c][n] = 0
 
 
+# Whenever we change layers, update all the button lights to their cached state
 def update_layer_color():
-    if layer == 0:
+    if layer == HOTCUE:
         xone.send(mido.Message(type="note_on", channel=14, note=0x0f))
-    elif layer == 2:
+    elif layer == BEATLOOP:
         xone.send(mido.Message(type="note_on", channel=14, note=0x13))
-    elif layer == 1:
+    elif layer == BEATJUMP:
         xone.send(mido.Message(type="note_on", channel=14, note=0x17))
 
     # if VU overrides hotcue, dont update
-    if VU_ON == 2: return
+    if VU_ON == VU_ALWAYS: return
 
     chan = layer2chan[False][layer]
     for n,v in ledcache[chan].items():
         if v > 0:
-            if layer == 0:
+            if layer == HOTCUE:
                 if v in pad_mapping:
                     n += 36 * pad_mapping[v]
                 else:
                     n += 36
-            if layer == 1:
+            if layer == BEATJUMP:
                 n += 72
             v = 127
             xone.send(mido.Message(type="note_on", channel=14, note=n, velocity=v))
@@ -279,21 +311,26 @@ def update_layer_color():
 # left = 127, right = 1
 shift = False
 def handle_xone(msg):
-    global last_xone,shift,layer
+    global last_xone,shift,layer,fxchan
     last_xone = time.time()
     skipshift=False
     dup=False
     prn("K2",msg," = ",msg.hex())
+    # Handle Shift key internally
     if msg.type in ["note_on","note_off"] and msg.channel == 14 and msg.note == 12:
         shift = msg.velocity == 127
         xone.send(msg)
         return
 
+    # Handle encoders, convert them to quick button presses
+    # with a diff button for clock vs anti-clockwise turns
     if msg.type == 'control_change' and msg.channel == 14 and msg.control in [0,3]:
         cc = cc0 = msg.control
         msg.channel = 0 if cc == 0 else 1
         cc = 0 if msg.value == 127 else 1
         msg = mido.Message(type="note_on", channel=msg.channel, note=cc, velocity=127)
+        # different control if shifting OR if the deck associated with the control is not playing
+        # (so that we can beatjump while unshifted when deck is stopped)
         if shift or (cc0==0 and not decks[0].playing()) or (cc0==3 and not decks[1].playing()):
             msg.channel += 4
         
@@ -303,33 +340,80 @@ def handle_xone(msg):
         rbox.send(msg)
         prn(" "*40+">>",msg," = ",msg.hex())
         return
-    elif msg.type == "note_off":
+
+    # Convert "note_off" into "note_on" + velocity=0
+    if msg.type == "note_off":
         m = msg.dict()
         m['type'] = "note_on"
         msg = mido.Message(**m)
         msg.velocity = 0
 
+    # This button used for FX channel assign, cycles between 3 buttons
+    # 0: 1 on --> initial state
+    # 1: 1 off, 2 on --> 2 only
+    # 2: 1 on --> 1+2
+    # 3: 2 off --> 1 on
+    if msg.type == "note_on" and msg.note == 47:
+        def togglefx(c):
+            msg.channel = 13 if c==2 else 14
+            msg.velocity=127
+            rbox.send(msg)
+            prn(" "*40+">>",msg," = ",msg.hex())
+            msg.velocity=0
+            rbox.send(msg)
+            prn(" "*40+">>",msg," = ",msg.hex())
 
+        if msg.velocity > 0:
+            if fxchan == 0:
+                # 1 on -> 1 on
+                togglefx(1)
+                fxchan = 1
+            elif fxchan == 1:
+                # 1 off, 2 on -> 2 on
+                togglefx(1)
+                togglefx(2)
+                fxchan = 2
+            elif fxchan == 2:
+                # 1 on --> 1+2 on
+                togglefx(1)
+                fxchan = 3
+            elif fxchan == 3:
+                # 2 off -> 1 on
+                togglefx(2)
+                fxchan = 1
+
+            msg.channel = 14
+            msg.note += (fxchan-1)*36
+            msg.velocity=127
+            xone.send(msg)
+            prn(" "*40+"<<",msg," = ",msg.hex())
+
+        return
+
+    # Handle layer button
     l0 = layer
     if msg.type == "note_on" and msg.channel == 14 and msg.note == 15:
-        skipshift=True
-        dup = True
+        skipshift=True # don't be affected by shift key
+        dup = True # send two commands (so we can mirror it for both decks)
         if msg.velocity == 0:
             layer = (layer+1)%2
         update_layer_color()
 
+    # If shifting, modify channel
     if shift and not skipshift:
         if msg.channel == 14:
             msg.channel = 13
         else:
             msg.channel += 4
     
+    # Modify channel based on layer, for bottom buttons only
     if msg.type == "note_on" and ((msg.note >= 24 and msg.note <= 39) or msg.note==15):
         msg.channel -= l0*2
 
     rbox.send(msg)
     prn(" "*40+">>",msg," = ",msg.hex())
 
+    # Duplicate some messages (so we can midi map to 2 commands in rbox)
     if dup:
         msg.channel-=1
         prn(" "*40+">>",msg," = ",msg.hex())
@@ -399,7 +483,7 @@ while True:
     except:
         recon()
     if msvcrt.kbhit():
-        key = msvcrt.getch()
+        key = str(msvcrt.getch(), 'UTF-8')
         if key == "x":
             print(">>> Recon")
             recon()
@@ -412,7 +496,8 @@ while True:
             print(">>> Debug=",DBG)
         if key == "v":
             VU_ON = (VU_ON+1)%3
-            print(">>> VU: %d" % VU_ON)
+            labels = ['never', 'only in beatjump', 'always']
+            print(">>> VU Meter: %s" % labels[VU_ON])
             update_layer_color()
     try:
         time.sleep(0.1)
