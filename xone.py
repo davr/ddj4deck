@@ -22,8 +22,8 @@ VU_ON=1
 DBG=True
 
 # layer numbers
-HOTCUE=0
-BEATJUMP=1
+HOTCUE=1
+BEATJUMP=0
 BEATLOOP=2  # not used
 
 VU_NEVER=0
@@ -81,6 +81,7 @@ class Deck:
         self._pos = 0
         self._lastpos = 0
         self._lastplay = 0
+        self._vu_pads = [0,0,0,0]
     def loaded(self, val):
         self._loaded = val
         self.update_loaded()
@@ -106,20 +107,29 @@ class Deck:
     def vu(self, val):
         self._vu = val
         if VU_ON == VU_NEVER or (VU_ON == VU_BEATJUMP and layer == BEATJUMP): return
-        p = vu_mapping_1[val]+1
+        p = vu_mapping_1[val]
+        if p>0: p += 1
         m = vu_mapping_2[p]
-        #prn(val," > ",p," > ",m)
+        prn(val," > ",p," > ",m)
         for i in range(0,4):
-            note = m[i]+self._n
+            note = m[i]
             velocity=127
             t = "note_on"
-            if note<0:
+            if note<0 and self._vu_pads[i]:
+                self._vu_pads[i] = 0
                 velocity=0
-                note *= -1
+                note = note * -1
+                note += self._n
                 t = "note_off"
-            msg=mido.Message(type=t, channel=14, note=note, velocity=velocity)
-            #prn(msg)
-            xone.send(msg)
+                msg=mido.Message(type=t, channel=14, note=note, velocity=velocity)
+                prn(msg)
+                xone.send(msg)
+            elif note>0:
+                self._vu_pads[i] = 1
+                note += self._n
+                msg=mido.Message(type=t, channel=14, note=note, velocity=velocity)
+                prn(msg)
+                xone.send(msg)
 
     def pos(self, val):
         self._pos = val
@@ -166,23 +176,45 @@ vu_mapping_1 = \
 # maps out 12 possible VU states
 # negative sends a note_off command
 # the pads fill up with green, then orange, then red 
-#  E3 F3 F#3 G3
-#0x34 35 36 37
 #0=red, +36=orange, +72=green
+# C#1 C#4 C#7
+# 25 61 97
+# C#1 F1 A1 C#2
+# 25 29 33 37
+R=0
+Y=36
+G=72
 vu_mapping_2 = [
-        [-72-25, -72-29, -72-33, -72-37],
-        [25+72, -72-29, -72-33, -72-37],
-        [25+72, 29+72, -72-33, -72-37],
-        [25+72, 29+72, 33+72, -72-37],
-        [25+72, 29+72, 33+72, 37+72],
-        [25+36, 29+72, 33+72, 37+72],
-        [25+36, 29+36, 33+72, 37+72],
-        [25+36, 29+36, 33+36, 37+72],
-        [25+36, 29+36, 33+36, 37+36],
-        [25, 29+36, 33+36, 37+36],
-        [25, 29, 33+36, 37+36],
-        [25, 29, 33, 37+36],
-        [25, 29, 33, 37],
+        [-25-R, -29-R, -33-R, -37-R],
+        [25+G, -29-R, -33-R, -37-R],
+        [25+Y, -29-R, -33-R, -37-R],
+        [25+R, -29-R, -33-R, -37-R],
+        [25+R, 29+G, -33-R, -37-R],
+        [25+R, 29+Y, -33-R, -37-R],
+        [25+R, 29+R, -33-R, -37-R],
+        [25+R, 29+R, 33+G, -37-R],
+        [25+R, 29+R, 33+Y, -37-R],
+        [25+R, 29+R, 33+R, -37-R],
+        [25+R, 29+R, 33+R, 37+G],
+        [25+R, 29+R, 33+R, 37+Y],
+        [25+R, 29+R, 33+R, 37+R],
+        ]
+
+# alternative mapping, not used
+vu_mapping_2b = [
+        [-25-G, -29-G, -33-G, -37-G],
+        [25+G, -29-G, -33-G, -37-G],
+        [25+G, 29+G, -33-G, -37-G],
+        [25+G, 29+G, 33+G, -37-G],
+        [25+G, 29+G, 33+G, 37+G],
+        [25+Y, 29+G, 33+G, 37+G],
+        [25+Y, 29+Y, 33+G, 37+G],
+        [25+Y, 29+Y, 33+Y, 37+G],
+        [25+Y, 29+Y, 33+Y, 37+Y],
+        [25+R, 29+Y, 33+Y, 37+Y],
+        [25+R, 29+R, 33+Y, 37+Y],
+        [25+R, 29+R, 33+R, 37+Y],
+        [25+R, 29+R, 33+R, 37+R],
 ]
 decks = [Deck(0),Deck(1)]
 def handle_rbox(msg):
