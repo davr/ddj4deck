@@ -278,7 +278,7 @@ def handle_rbox(msg):
                 s2, l2 = chan2layer[msg.channel]
                 if l2 == layer:
                     msg.channel = 14
-                    if l2 == HOTCUE:
+                    if l2 == BEATJUMP: #backwards
                         # Convert from many hotcue colors to the 3 xone colors (diff note per color)
                         if msg.velocity in pad_mapping:
                             msg.note += 36 * pad_mapping[msg.velocity]
@@ -287,7 +287,7 @@ def handle_rbox(msg):
                             # default color is yellow
                             print("color not found: %d"%msg.velocity)
                             msg.note += 36
-                    elif l2 == BEATJUMP:
+                    elif l2 == HOTCUE: #backwards
                         # beatjump always green btns
                         msg.note += 72
                 else:
@@ -323,12 +323,12 @@ def update_layer_color():
     chan = layer2chan[False][layer]
     for n,v in ledcache[chan].items():
         if v > 0:
-            if layer == HOTCUE:
+            if layer == BEATJUMP:#backwards
                 if v in pad_mapping:
                     n += 36 * pad_mapping[v]
                 else:
                     n += 36
-            if layer == BEATJUMP:
+            if layer == HOTCUE:#backwards
                 n += 72
             v = 127
             xone.send(mido.Message(type="note_on", channel=14, note=n, velocity=v))
