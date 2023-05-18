@@ -1,7 +1,8 @@
 #!/usr/bin/python3
+import time
+time.sleep(3)
 import traceback
 import mido
-import time
 import sys
 from math import ceil
 import msvcrt
@@ -20,6 +21,7 @@ fxchan=0
 VU_ON=1
 
 DBG=True
+PITCHBEND=False
 
 # layer numbers
 HOTCUE=1
@@ -32,6 +34,10 @@ VU_ALWAYS=2
 
 def prn(*args):
     if DBG:
+        print(*args)
+
+def prn2(*args):
+    if DBG == 2:
         print(*args)
 
 # find a midi device by name
@@ -53,10 +59,18 @@ def find_port(name, out=True):
             
     raise Exception("Couldn't find %s (out=%s)" % (name,out))
 
-xone_in = find_port("XONE", False)    
-xone = find_port("XONE", True)    
-rbox_in = find_port("Internal", False)
-rbox = find_port("Internal", True)
+def find_port_safe(name, out=True):
+    while True:
+        try:
+            return find_port(name, out)
+        except Exception as e:
+            print(e)
+            time.sleep(1)
+
+xone_in = find_port_safe("XONE", False)    
+xone = find_port_safe("XONE", True)    
+rbox_in = find_port_safe("Internal", False)
+rbox = find_port_safe("Internal", True)
 
 DBG=False
 
@@ -220,7 +234,7 @@ decks = [Deck(0),Deck(1)]
 def handle_rbox(msg):
     if msg.type == "sysex":
         return
-    prn("RB",msg," = ",msg.hex())
+    prn2("RB",msg," = ",msg.hex())
     if msg.type == "control_change":
         if msg.channel == 0:
             if msg.control == 2:
@@ -280,6 +294,7 @@ def handle_rbox(msg):
                     msg.channel = 14
                     if l2 == BEATJUMP: #backwards
                         # Convert from many hotcue colors to the 3 xone colors (diff note per color)
+                        print("Cue",msg.note,msg.velocity)
                         if msg.velocity in pad_mapping:
                             msg.note += 36 * pad_mapping[msg.velocity]
                             msg.velocity = 127
@@ -292,9 +307,9 @@ def handle_rbox(msg):
                         msg.note += 72
                 else:
                     return
-                prn(s2, l2, layer)
+                prn2(s2, l2, layer)
 
-    prn(" "*20+"<<",msg," = ",msg.hex())
+    prn2(" "*20+"<<",msg," = ",msg.hex())
     try:
         xone.send(msg)
     except:
@@ -343,7 +358,7 @@ def update_layer_color():
 # left = 127, right = 1
 shift = False
 def handle_xone(msg):
-    global last_xone,shift,layer,fxchan
+    global last_xone,shift,layer,fxchan,PITCHBEND
     last_xone = time.time()
     skipshift=False
     dup=False
@@ -357,20 +372,30 @@ def handle_xone(msg):
     # Handle encoders, convert them to quick button presses
     # with a diff button for clock vs anti-clockwise turns
     if msg.type == 'control_change' and msg.channel == 14 and msg.control in [0,3]:
-        cc = cc0 = msg.control
-        msg.channel = 0 if cc == 0 else 1
-        cc = 0 if msg.value == 127 else 1
-        msg = mido.Message(type="note_on", channel=msg.channel, note=cc, velocity=127)
         # different control if shifting OR if the deck associated with the control is not playing
         # (so that we can beatjump while unshifted when deck is stopped)
+        shifted=False
+        cc = cc0 = msg.control
         if shift or (cc0==0 and not decks[0].playing()) or (cc0==3 and not decks[1].playing()):
-            msg.channel += 4
-        
-        rbox.send(msg)
-        prn(" "*40+">>",msg," = ",msg.hex())
-        msg.velocity = 0
-        rbox.send(msg)
-        prn(" "*40+">>",msg," = ",msg.hex())
+            shifted=True
+        if not PITCHBEND and not shifted:
+            chan = 0 if cc == 0 else 1
+            polarity = -15 if msg.value == 127 else 15
+            msg = mido.Message(type="control_change", channel=chan, control=34, value=64+polarity)
+            prn(" "*40+">>",msg," = ",msg.hex())
+            rbox.send(msg)
+        else:
+            msg.channel = 0 if cc == 0 else 1
+            cc = 0 if msg.value == 127 else 1
+            msg = mido.Message(type="note_on", channel=msg.channel, note=cc, velocity=127)
+            if shifted:
+                msg.channel += 4
+            
+            rbox.send(msg)
+            prn(" "*40+">>",msg," = ",msg.hex())
+            msg.velocity = 0
+            rbox.send(msg)
+            prn(" "*40+">>",msg," = ",msg.hex())
         return
 
     # Convert "note_off" into "note_on" + velocity=0
@@ -516,6 +541,9 @@ while True:
         recon()
     if msvcrt.kbhit():
         key = str(msvcrt.getch(), 'UTF-8')
+        if key == "p":
+            PITCHBEND = not PITCHBEND
+            print(">> Pitch" if PITCHBEND else ">> Scratch")
         if key == "x":
             print(">>> Recon")
             recon()

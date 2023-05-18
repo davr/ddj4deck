@@ -1,4 +1,13 @@
 @file,1,PIONEER DDJ-SX2
+,,,,,,,,,,,,,,
+JogScratch,JogScratch,JogRotate,B022,0,1,2,3,,,,,,RO,Scratch
+JogPitchBend,JogPitchBend,JogRotate,B023,0,1,2,3,,,,,,RO,Pitch Bend
+JogSearch,JogSearch,Difference,B01F,0,1,2,3,,,,,,RO,Search
+JogTouch,JogTouch,JogTouch,9036,0,1,2,3,,,,,,RO,Touch
+JogTouch,JogTouch+Shift,JogTouch,9067,0,1,2,3,,,,,,RO,Touch
+,,,,,,,,,,,,,,
+WheelPitchBend,WheelPitchBend,JogRotate,B021,0,1,2,3,,,,,,RO,Pitch Bend
+WheelSearch,WheelSearch,JogRotate,B026,0,1,2,3,,,,,,RO,Pitch Bend
 Area,,Button,9E34,,,,,9E34,,,,,,
 AutoLoop,,Button,,9E0D,9E0E,,,,9E0D,9E0E,,,,
 BeatJump,,Button,,9E0F,9D0F,,,,9E0F,9D0F,,,Fast;,
