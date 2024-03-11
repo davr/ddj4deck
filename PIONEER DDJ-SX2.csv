@@ -144,6 +144,10 @@ PAD7_HotCue+Shift,PAD7.HotCue.Delete,DdjSx2Pad,,9D1D,9D1F,,,,9D1D,9D1F,,,Fast;,D
 PAD8_BeatJump,,DdjSxPad,,9C21,9C23,,,,9C21,9C23,,,Fast;,
 PAD8_HotCue,PAD8.HotCue.Call,DdjSx2Pad,,9E19,9E1B,,,,9E19,9E1B,,,Fast;,HOT CUE8
 PAD8_HotCue+Shift,PAD8.HotCue.Delete,DdjSx2Pad,,9D19,9D1B,,,,9D19,9D1B,,,Fast;,Delete HOT CUE8
+PartIsolator,,Button,,9D31,9D32,,,,9D31,9D32,,,,
+PartIsolatorDrums,,KnobSlider,,BE53,BE54,,,,,,,,,
+PartIsolatorInst,,KnobSlider,,BE4B,BE4C,,,,,,,,,
+PartIsolatorVocal,,KnobSlider,,BE4F,BE50,,,,,,,,,
 PitchBendDown,,Button,,9000,9100,,,,9000,9100,,,,
 PitchBendUp,,Button,,9001,9101,,,,9001,9101,,,,
 PlayPause,,Button,,9E29,9E2A,,,,9E29,9E2A,,,Fast;Blink=1000;Priority=50;,
