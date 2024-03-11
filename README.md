@@ -23,7 +23,7 @@ Shift + hotcue == delete hotcue
 | Rotary | Pitch bend / seek<br>Press: Browse area | Browse / Waveform Zoom<br>Press: Load left / Inst Dbls | Browse / Waveform Zoom<br>Press: Load left / Inst Dbls | Pitch bend / seek<br>Press: Browse toggle |
 | LED | | |  |  |
 | Knob | Headphone mix | EQ High | EQ High | Master Level |
-| Btn |    | Headphone cue | Headphone cue | Master cue |
+| Btn |    | Headphone cue / PartISO | Headphone cue / PartISO | Master cue |
 | Knob | Headphone level | EQ Mid | EQ Mid | FX1 Level |
 | Btn | CFX On | Cue | Cue | FX1 On |
 | Knob | CFX | EQ Low | EQ Low | CFX |

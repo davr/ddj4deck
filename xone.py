@@ -1,12 +1,14 @@
 #!/usr/bin/python3
 import time
-time.sleep(3)
 import traceback
 import mido
+import mido.ports
 import sys
 from math import ceil
 import msvcrt
 from copy import deepcopy
+from elapsed_millis import ElapsedMillis
+from typing import Union, override, Literal
 
 virtualPorts = mido.Backend('mido.backends.tevirtualmidi')
 #rbox = virtualPorts.open_ioport("PIONEER DDJ-SX", virtual=True)
@@ -15,13 +17,20 @@ virtualPorts = mido.Backend('mido.backends.tevirtualmidi')
 rtmidi = mido.Backend("mido.backends.rtmidi")
 last_xone = time.time()
 layer=0
-fxchan=0
+fxchan=1
+
+eqmode=[0,0]
+headphonecue=[1,0]
 
 # 0 = never, 1 = when not in hotcue, 2 = always
 VU_ON=1
 
-DBG=True
+DBG=1
 PITCHBEND=False
+
+# EQ mode
+EQ_EQ=0
+EQ_PARTISO=1
 
 # layer numbers
 HOTCUE=1
@@ -40,8 +49,16 @@ def prn2(*args):
     if DBG == 2:
         print(*args)
 
+@override
+def find_port(name: str, out:Literal[False]) -> mido.ports.BaseInput:
+    pass
+
+@override
+def find_port(name: str, out:Literal[True]) -> mido.ports.BaseOutput:
+    pass
+
 # find a midi device by name
-def find_port(name, out=True):
+def find_port(name: str, out:bool=True) -> Union[mido.ports.BaseInput, mido.ports.BaseOutput]:
     prn("Enumerating names")
     if out:
         names = rtmidi.get_output_names()
@@ -59,7 +76,15 @@ def find_port(name, out=True):
             
     raise Exception("Couldn't find %s (out=%s)" % (name,out))
 
-def find_port_safe(name, out=True):
+@override
+def find_port_safe(name: str, out:Literal[False]) -> mido.ports.BaseInput:
+    pass
+
+@override
+def find_port_safe(name: str, out:Literal[True]) -> mido.ports.BaseOutput:
+    pass
+
+def find_port_safe(name:str, out:bool=True) -> Union[mido.ports.BaseInput, mido.ports.BaseOutput]:
     while True:
         try:
             return find_port(name, out)
@@ -72,13 +97,46 @@ xone = find_port_safe("XONE", True)
 rbox_in = find_port_safe("Internal", False)
 rbox = find_port_safe("Internal", True)
 
-DBG=False
+DBG=0
 
 
 # [shift][layer] = channel
 layer2chan = {False: {0: 14, 1:12}, True: {0: 13, 1:11}}
 # [channel] = (shift, layer)
 chan2layer = {11:(True, 1), 12:(False, 1), 13:(True, 0), 14:(False, 0)}
+
+
+# Handle blinking headphone cue / partiso indicator
+intime_ems = ElapsedMillis()
+tt_mode = 0
+def update_indicators(force=False):
+    global intime_ems,tt_mode
+    if intime_ems < 300 and not force:
+        return
+    if not force:
+        intime_ems -= 300
+    tt_mode = not tt_mode
+    tt = tt_mode or force
+    c = headphonecue.copy()
+    if tt and eqmode[0]:
+        c[0]=2
+    if tt and eqmode[1]:
+        c[1]=2
+        
+    def sendit(c, n):
+        v=0
+        if c > 0:
+            v = 127
+        if c == 2:
+            n += 72
+        t = "note_on" if v > 0 else "note_off"
+        msg = mido.Message(type=t, channel=14, note=n, velocity=v)
+        prn2(" "*40+"<<",msg," = ",msg.hex())
+        xone.send(msg)
+    
+    sendit(c[0], 49)
+    sendit(c[1], 50)
+
 
 #red + yell + green
 # + 24 + 24
@@ -231,7 +289,7 @@ vu_mapping_2b = [
         [25+R, 29+R, 33+R, 37+R],
 ]
 decks = [Deck(0),Deck(1)]
-def handle_rbox(msg):
+def handle_rbox(msg : mido.Message):
     if msg.type == "sysex":
         return
     prn2("RB",msg," = ",msg.hex())
@@ -256,6 +314,22 @@ def handle_rbox(msg):
         if msg.note == 47:
             return
         
+        # Handle headphone cue / partiso indicators
+        if msg.note == 49:
+            if msg.channel == 13:
+                eqmode[0] = (msg.velocity == 127)
+            if msg.channel == 14:
+                headphonecue[0] = (msg.velocity == 127)                
+            update_indicators(True)
+            return
+        if msg.note == 50:
+            if msg.channel == 13:
+                eqmode[1] = (msg.velocity == 127)
+            if msg.channel == 14:
+                headphonecue[1] = (msg.velocity == 127)
+            update_indicators(True)
+            return
+        
         # Keep track of deck playing
         if msg.note == 41:
             decks[0].play(msg.velocity == 127)
@@ -276,6 +350,9 @@ def handle_rbox(msg):
                 decks[0].warn(msg.velocity)
             if msg.note == 5:
                 decks[1].warn(msg.velocity)
+
+        if msg.note in [49,50]:
+            headphonecue[msg.note] = msg.velocity
 
         # Buttons that should always be a certain color
         if msg.note in yellows:
@@ -357,8 +434,8 @@ def update_layer_color():
 # 0 and 3
 # left = 127, right = 1
 shift = False
-def handle_xone(msg):
-    global last_xone,shift,layer,fxchan,PITCHBEND
+def handle_xone(msg : mido.Message):
+    global last_xone,shift,layer,fxchan,PITCHBEND,eqmode
     last_xone = time.time()
     skipshift=False
     dup=False
@@ -397,6 +474,22 @@ def handle_xone(msg):
             rbox.send(msg)
             prn(" "*40+">>",msg," = ",msg.hex())
         return
+
+    # shift + headphone 1 - swap eq knobs
+    if msg.type == "note_on" and shift and msg.note == 49:
+        eqmode[0] = not eqmode[0]
+        prn("eq1: %d"%eqmode[0])
+        update_indicators(True)
+    if msg.type == 'control_change' and msg.control in [5, 9, 13] and eqmode[0]==EQ_PARTISO:
+        msg.control += 70
+
+    # shift + headphone 2 - swap eq knobs
+    if msg.type == "note_on" and shift and msg.note == 50:
+        eqmode[1] = not eqmode[1]
+        prn("eq2: %d"%eqmode[1])
+        update_indicators(True)
+    if msg.type == 'control_change' and msg.control in [6, 10, 14] and eqmode[1]==EQ_PARTISO:
+        msg.control += 70
 
     # Convert "note_off" into "note_on" + velocity=0
     if msg.type == "note_off":
@@ -462,7 +555,7 @@ def handle_xone(msg):
             msg.channel = 13
         else:
             msg.channel += 4
-    
+
     # Modify channel based on layer, for bottom buttons only
     if msg.type == "note_on" and ((msg.note >= 24 and msg.note <= 39) or msg.note==15):
         msg.channel -= l0*2
@@ -475,6 +568,7 @@ def handle_xone(msg):
         msg.channel-=1
         prn(" "*40+">>",msg," = ",msg.hex())
         rbox.send(msg)
+
 
 def recon():
     global xone_in
@@ -489,7 +583,7 @@ def recon():
         pass
     ok = False
     while not ok:
-        print("recon")
+        print("Reconnecting...")
         time.sleep(1)
         try:
             xone_in = find_port("XONE", False)    
@@ -508,7 +602,7 @@ def recon():
             except:
                 pass
             continue
-        print("recon ok")
+        print("Reconnected OK")
         ok = True
 
 #def loop():
@@ -526,9 +620,21 @@ def recon():
 #
 update_layer_color()
 
+def handle_xone_1(*a):
+    try:
+        handle_xone(*a)
+    except Exception as e:
+        print(e)
+
+def handle_rbox_1(*a):
+    try:
+        handle_rbox(*a)
+    except Exception as e:
+        print(e)
+
 #rbox.callback = handle_rbox
-rbox_in.callback = handle_rbox
-xone_in.callback = handle_xone
+rbox_in.callback = handle_rbox_1
+xone_in.callback = handle_xone_1
 ping = mido.Message(type="note_on", channel=14, note=0, velocity=0)
 tt = 0
 while True:
@@ -537,7 +643,8 @@ while True:
         if tt > 20:
             tt = 0
             xone.send(ping)
-    except:
+    except Exception as e:
+        print(e)
         recon()
     if msvcrt.kbhit():
         key = str(msvcrt.getch(), 'UTF-8')
@@ -552,13 +659,17 @@ while True:
             print(">>> Quitting")
             break
         if key == "d":
-            DBG = not DBG
+            DBG = [1,2,0][DBG]
             print(">>> Debug=",DBG)
         if key == "v":
             VU_ON = (VU_ON+1)%3
             labels = ['never', 'only in beatjump', 'always']
             print(">>> VU Meter: %s" % labels[VU_ON])
             update_layer_color()
+    try:
+        update_indicators()
+    except Exception as e:
+        print(e)
     try:
         time.sleep(0.1)
     except:
